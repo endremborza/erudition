@@ -102,7 +102,7 @@ def _eval(c, solution_name, pack_repo: PackRepo, input_id):
         proc_time = float("inf")
         succ = False
     finally:
-        _log(solution_name, input_id, succ, proc_time, _gethash(c))
+        _log(c, solution_name, input_id, succ, proc_time, _gethash(c))
         c.run(f"docker kill {contid} && docker rm {contid}")
         tmpdir.cleanup()
 
@@ -133,7 +133,7 @@ def _gethash(c):
         return
 
 
-def _log(solution_name, input_id, result, proc_time, commit_hash):
+def _log(c, solution_name, input_id, result, proc_time, commit_hash):
     logdic = {
         "name": solution_name,
         "input_id": input_id,
@@ -144,7 +144,10 @@ def _log(solution_name, input_id, result, proc_time, commit_hash):
     logstr = json.dumps(logdic)
     logger.info("DONE", **logdic)
     _LOGDIR.mkdir(exist_ok=True)
-    (_LOGDIR / f"{uuid4().hex}.json").write_text(logstr)
+    log_id = uuid4().hex
+    (_LOGDIR / f"{log_id}.json").write_text(logstr)
+    c.run(f'git add {_LOGDIR} && git commit -m "add logs {log_id[:8]}"')
+    c.run("git pull; git push")
 
 
 def _get_changes(c):
