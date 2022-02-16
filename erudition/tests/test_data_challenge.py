@@ -1,23 +1,10 @@
-import os
-import sys
-from contextlib import contextmanager
 from pathlib import Path
 
 from invoke import Context
 
 from erudition.__main__ import main
 from erudition.data_challenge import constants, tasks
-from erudition.util import git_commit
-
-
-@contextmanager
-def cd_into(dirpath):
-    wd = os.getcwd()
-    os.chdir(dirpath)
-    sys.path.insert(0, str(dirpath))
-    yield
-    os.chdir(wd)
-    sys.path.pop(0)
+from erudition.util import cd_into, git_commit
 
 
 def test_full(tmp_path):
@@ -32,10 +19,7 @@ def test_full(tmp_path):
     main([None, "challenge", ch_name, tmp_path])
 
     with cd_into(tmp_path / f"{ch_name}-challenge"):
-        c.run("git init")
         c.run(f"git remote add origin {origin_path}")
-        git_commit(c, "* .github", "initial")
-        c.run("git branch -M main")
         c.run("git push -u origin main")
         _dummy_solution("s1", "{1: 2}")
         git_commit(c, "s1", "add s1")

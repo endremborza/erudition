@@ -161,14 +161,7 @@ def _get_changes(c):
         lambda s: s.startswith(const.EVALED_GIT_TAG),
         _get_lines(c, "git tag"),
     )
-    roots = _get_lines(c, "git rev-list --max-parents=0 HEAD")
-    base_commits = [*tags, *roots]
-    logger.info("comparison commits", commits=base_commits)
-    return [
-        *reduce(
-            set.intersection, map(partial(_get_diff_dirs, c), base_commits)
-        )
-    ]
+    return [*reduce(set.intersection, map(partial(_get_diff_dirs, c), tags))]
 
 
 def _get_lines(c, comm):
