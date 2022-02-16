@@ -14,11 +14,11 @@ from structlog import get_logger
 
 from ..util import git_commit
 from . import constants as const
+from .draw import dump_readme
 from .util import CConf, get_obj
 
 _RUNNER = "__r.sh"
 _TIMER = "__t"
-_LOGDIR = Path(".logs")
 
 logger = get_logger(ctx="data challenge task")
 
@@ -79,6 +79,11 @@ def retag(c):
     tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
     c.run(f"git tag {tag_name}")
     c.run(f"git push origin {tag_name}")
+    try:
+        dump_readme()
+        git_commit(c, "README.md", "update readme")
+    except Exception as e:
+        logger.exception(e)
 
 
 def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
@@ -153,10 +158,11 @@ def _log(c, solution_name, input_id, result, proc_time, commit_hash, push):
     }
     logstr = json.dumps(logdic)
     logger.info("DONE", **logdic)
-    _LOGDIR.mkdir(exist_ok=True)
+    lpath = Path(const.LOG_DIR)
+    lpath.mkdir(exist_ok=True)
     log_id = uuid4().hex
-    (_LOGDIR / f"{log_id}.json").write_text(logstr)
-    git_commit(c, _LOGDIR, f"add logs {log_id[:8]}")
+    (lpath / f"{log_id}.json").write_text(logstr)
+    git_commit(c, const.LOG_DIR, f"add logs {log_id[:8]}")
     if push:
         c.run("git config --local pull.rebase true")
         c.run("git pull; git push")

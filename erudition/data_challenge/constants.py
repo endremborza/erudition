@@ -1,7 +1,7 @@
 CHALLENGE_YAML = "challenge.yaml"
 PRIV_PACKID_KEY = "private-ids"
 PUB_PACKID_KEY = "public-ids"
-
+LOG_DIR = ".logs"
 
 CONF_PATH = "conf.yaml"
 SETUP_COMM = "setup-command"
