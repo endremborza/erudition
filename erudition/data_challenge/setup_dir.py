@@ -38,5 +38,5 @@ def create_dir(challenge_name: str, target="."):
 
     with cd_into(out_dir):
         c.run("git init -b main")
-        git_commit(c, "*", "init")
+        git_commit(c, "* .github .gitignore", "init")
         c.run(f"git tag {const.EVALED_GIT_TAG}-v0")
