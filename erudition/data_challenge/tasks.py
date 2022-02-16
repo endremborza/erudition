@@ -161,7 +161,12 @@ def _get_changes(c):
         lambda s: s.startswith(const.EVALED_GIT_TAG),
         _get_lines(c, "git tag"),
     )
-    return [*reduce(set.intersection, map(partial(_get_diff_dirs, c), tags))]
+    try:
+        fun = partial(_get_diff_dirs, c)
+        return [*reduce(set.intersection, map(fun, tags))]
+    except TypeError:
+        msg = f"no matching git tags fro {const.EVALED_GIT_TAG}"
+        raise EnvironmentError(msg)
 
 
 def _get_lines(c, comm):
