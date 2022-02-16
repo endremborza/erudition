@@ -186,7 +186,7 @@ def _get_diff_dirs(c, base_commit):
         ):
             continue
         poss_dir = Path(poss_ch).parts[0]
-        if Path(poss_dir).is_dir and Path(poss_dir).exists():
+        if Path(poss_dir).is_dir() and Path(poss_dir).exists():
             changes.add(poss_dir)
     return changes
 
