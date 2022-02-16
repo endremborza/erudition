@@ -165,7 +165,7 @@ def _get_changes(c):
         fun = partial(_get_diff_dirs, c)
         return [*reduce(set.intersection, map(fun, tags))]
     except TypeError:
-        msg = f"no matching git tags fro {const.EVALED_GIT_TAG}"
+        msg = f"no matching git tags for {const.EVALED_GIT_TAG}"
         raise EnvironmentError(msg)
 
 
