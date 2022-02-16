@@ -132,7 +132,7 @@ def _gethash(c):
     try:
         with redirect_stdout(f):
             c.run("git rev-parse --short HEAD")
-        return f.getvalue()
+        return f.getvalue().strip()
     except UnexpectedExit:
         return
 
