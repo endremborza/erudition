@@ -163,6 +163,7 @@ def _get_changes(c):
     )
     roots = _get_lines(c, "git rev-list --max-parents=0 HEAD")
     base_commits = [*tags, *roots]
+    logger.info("comparison commits", commits=base_commits)
     return [
         *reduce(
             set.intersection, map(partial(_get_diff_dirs, c), base_commits)
