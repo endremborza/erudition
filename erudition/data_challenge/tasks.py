@@ -67,13 +67,18 @@ def test_modified_solutions(c, input_id, fail=False, push_logs=True):
     for solution in changed_solutions:
         _eval(c, solution, pack_repo, input_id, fail, push_logs)
     pack_repo.cleanup()
-    if push_logs:
-        _retag(c)
 
 
 @task
 def get_test_pack(c):
     get_obj(const.PACK_FUNCTION)()
+
+
+@task
+def retag(c):
+    tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
+    c.run(f"git tag {tag_name}")
+    c.run(f"git push origin {tag_name}")
 
 
 def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
@@ -190,9 +195,3 @@ def _get_diff_dirs(c, base_commit):
         if Path(poss_dir).is_dir() and Path(poss_dir).exists():
             changes.add(poss_dir)
     return changes
-
-
-def _retag(c):
-    tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
-    c.run(f"git tag {tag_name}")
-    c.run(f"git push origin {tag_name}")
