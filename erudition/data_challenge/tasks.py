@@ -153,6 +153,7 @@ def _log(c, solution_name, input_id, result, proc_time, commit_hash, push):
     (_LOGDIR / f"{log_id}.json").write_text(logstr)
     git_commit(c, _LOGDIR, f"add logs {log_id[:8]}")
     if push:
+        c.run("git config --local pull.rebase true")
         c.run("git pull; git push")
 
 
