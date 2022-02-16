@@ -2,3 +2,4 @@ toml
 invoke
 pyyaml
 structlog
+pandas
