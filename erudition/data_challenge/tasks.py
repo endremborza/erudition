@@ -79,11 +79,9 @@ def retag(c):
     tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
     c.run(f"git tag {tag_name}")
     c.run(f"git push origin {tag_name}")
-    try:
-        dump_readme()
-        git_commit(c, "README.md", "update readme")
-    except Exception as e:
-        logger.exception(e)
+    dump_readme()
+    git_commit(c, "README.md", "update readme")
+    c.run("git push origin")
 
 
 def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
