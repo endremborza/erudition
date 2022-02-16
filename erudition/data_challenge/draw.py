@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from . import constants as const
@@ -23,12 +22,12 @@ def dump_readme():
     good_ones = (
         fresh_things.loc[succ_ser, "duration"]
         .loc[:, lambda df: df.mean().sort_values().index]
-        .assign(**{"Total time": lambda df: df.mean(axis=1)})
+        .assign(**{"Total time": lambda df: df.sum(axis=1)})
         .sort_values("Total time")
         .round(4)
     )
 
-    top_html = good_ones.sort_values("mean").to_html()
+    top_html = good_ones.to_html()
     bot_html = fresh_things.loc[~succ_ser, :].to_html()
 
     out_str = "\n\n".join(
