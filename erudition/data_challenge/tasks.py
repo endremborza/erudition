@@ -53,6 +53,7 @@ class PackRepo:
 def test_solution(c, name, input_id):
     pack_repo = PackRepo(input_id)
     _eval(c, name, pack_repo, input_id)
+    pack_repo.cleanup()
     _retag(c)
 
 
@@ -64,6 +65,7 @@ def test_modified_solutions(c, input_id):
     pack_repo = PackRepo(input_id)
     for solution in changed_solutions:
         _eval(c, solution, pack_repo, input_id)
+    pack_repo.cleanup()
     _retag(c)
 
 
@@ -102,7 +104,6 @@ def _eval(c, solution_name, pack_repo: PackRepo, input_id):
     finally:
         _log(solution_name, input_id, succ, proc_time, _gethash(c))
         c.run(f"docker kill {contid} && docker rm {contid}")
-        pack_repo.cleanup()
         tmpdir.cleanup()
 
 
