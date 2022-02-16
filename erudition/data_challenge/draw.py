@@ -23,23 +23,13 @@ def dump_readme():
     good_ones = (
         fresh_things.loc[succ_ser, "duration"]
         .loc[:, lambda df: df.mean().sort_values().index]
-        .assign(mean=lambda df: df.mean(axis=1))
+        .assign(**{"Total time": lambda df: df.mean(axis=1)})
+        .sort_values("Total time")
+        .round(4)
     )
 
-    def _prettify(_df):
-        sucs = _df.loc[:, "is_success"].pipe(lambda df: df > 0)
-        return _df.loc[:, "duration"].style.apply(
-            lambda s: np.where(
-                sucs.loc[:, s.name],
-                "background-color:##90ee90",
-                "background-color:#ffcccb",
-            )
-        )
-
-    bot_html = fresh_things.loc[~succ_ser, :].pipe(_prettify).to_html()
     top_html = good_ones.sort_values("mean").to_html()
-    if True:  # until styling doesn't work... TODO
-        bot_html = fresh_things.loc[~succ_ser, "duration"].to_html()
+    bot_html = fresh_things.loc[~succ_ser, :].to_html()
 
     out_str = "\n\n".join(
         [
