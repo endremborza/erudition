@@ -1,5 +1,6 @@
 CHALLENGE_YAML = "challenge.yaml"
-PACKID_KEY = "pack-ids"
+PRIV_PACKID_KEY = "private-ids"
+PUB_PACKID_KEY = "public-ids"
 
 
 CONF_PATH = "conf.yaml"
@@ -16,6 +17,8 @@ PACK_FUNCTION = "load_pack"
 EVAL_FUNCTION = "evaluate"
 
 
-ACTION_PATH = ".github/workflows/run.yml"
+PR_GHA_PATH, PUSH_GHA_PATH = [
+    f".github/workflows/run-{k}.yml" for k in ["pr", "full"]
+]
 
 EVALED_GIT_TAG = "eval-checkpoint"

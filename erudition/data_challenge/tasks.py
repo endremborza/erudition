@@ -1,6 +1,7 @@
 import io
 import json
 from contextlib import redirect_stdout
+from datetime import datetime
 from distutils.dir_util import copy_tree
 from functools import partial
 from pathlib import Path
@@ -11,6 +12,7 @@ from zipfile import ZipFile
 from invoke import UnexpectedExit, task
 from structlog import get_logger
 
+from ..util import git_commit
 from . import constants as const
 from .util import CConf, get_obj
 
@@ -50,21 +52,21 @@ class PackRepo:
 
 
 @task
-def test_solution(c, name, input_id):
+def test_solution(c, name, input_id, fail=True):
     pack_repo = PackRepo(input_id)
-    _eval(c, name, pack_repo, input_id)
+    _eval(c, name, pack_repo, input_id, fail, False)
     pack_repo.cleanup()
     _retag(c)
 
 
 @task
-def test_modified_solutions(c, input_id):
+def test_modified_solutions(c, input_id, fail=False, push_logs=True):
     changed_solutions = _get_changes(c)
     if not changed_solutions:
         return
     pack_repo = PackRepo(input_id)
     for solution in changed_solutions:
-        _eval(c, solution, pack_repo, input_id)
+        _eval(c, solution, pack_repo, input_id, fail, push_logs)
     pack_repo.cleanup()
     _retag(c)
 
@@ -74,7 +76,7 @@ def get_test_pack(c):
     get_obj(const.PACK_FUNCTION)()
 
 
-def _eval(c, solution_name, pack_repo: PackRepo, input_id):
+def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
     logger.info(f"evaluating solution {solution_name} on input {input_id}")
     sdir = Path.cwd() / solution_name
     contid = "challenge_dcont_eu"
@@ -102,9 +104,11 @@ def _eval(c, solution_name, pack_repo: PackRepo, input_id):
         proc_time = float("inf")
         succ = False
     finally:
-        _log(c, solution_name, input_id, succ, proc_time, _gethash(c))
         c.run(f"docker kill {contid} && docker rm {contid}")
         tmpdir.cleanup()
+        if fail:
+            assert succ
+        _log(c, solution_name, input_id, succ, proc_time, _gethash(c), push)
 
 
 def _runcmd(c, containerid, comm):
@@ -133,21 +137,23 @@ def _gethash(c):
         return
 
 
-def _log(c, solution_name, input_id, result, proc_time, commit_hash):
+def _log(c, solution_name, input_id, result, proc_time, commit_hash, push):
     logdic = {
         "name": solution_name,
         "input_id": input_id,
         "is_success": result,
         "duration": proc_time,
         "commit": commit_hash,
+        "at": datetime.now().isoformat(),
     }
     logstr = json.dumps(logdic)
     logger.info("DONE", **logdic)
     _LOGDIR.mkdir(exist_ok=True)
     log_id = uuid4().hex
     (_LOGDIR / f"{log_id}.json").write_text(logstr)
-    c.run(f'git add {_LOGDIR} && git commit -m "add logs {log_id[:8]}"')
-    c.run("git pull; git push")
+    git_commit(c, _LOGDIR, f"add logs {log_id[:8]}")
+    if push:
+        c.run("git pull; git push")
 
 
 def _get_changes(c):
