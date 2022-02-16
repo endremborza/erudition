@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from uuid import uuid4
 from zipfile import ZipFile
 
-from invoke import UnexpectedExit, task
+from invoke import task
 from structlog import get_logger
 
 from ..util import git_commit
@@ -81,7 +81,8 @@ def retag(c):
     c.run(f"git push origin {tag_name}")
     dump_readme()
     git_commit(c, "README.md", "update readme")
-    c.run("git push origin")
+    c.run("git config --local pull.rebase true")
+    c.run("git pull; git push")
 
 
 def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
@@ -137,12 +138,9 @@ def _timed(comm, runner, dirpath):
 
 def _gethash(c):
     f = io.StringIO()
-    try:
-        with redirect_stdout(f):
-            c.run("git rev-parse --short HEAD")
-        return f.getvalue().strip()
-    except UnexpectedExit:
-        return
+    with redirect_stdout(f):
+        c.run("git rev-parse --short HEAD")
+    return f.getvalue().strip()
 
 
 def _log(c, solution_name, input_id, result, proc_time, commit_hash, push):
