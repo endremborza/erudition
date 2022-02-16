@@ -3,7 +3,7 @@ import json
 from contextlib import redirect_stdout
 from datetime import datetime
 from distutils.dir_util import copy_tree
-from functools import partial
+from functools import partial, reduce
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 from uuid import uuid4
@@ -56,7 +56,7 @@ def test_solution(c, name, input_id, fail=True):
     pack_repo = PackRepo(input_id)
     _eval(c, name, pack_repo, input_id, fail, False)
     pack_repo.cleanup()
-    _retag(c)
+    _retag(c, False)
 
 
 @task
@@ -68,7 +68,7 @@ def test_modified_solutions(c, input_id, fail=False, push_logs=True):
     for solution in changed_solutions:
         _eval(c, solution, pack_repo, input_id, fail, push_logs)
     pack_repo.cleanup()
-    _retag(c)
+    _retag(c, push_logs)
 
 
 @task
@@ -157,32 +157,43 @@ def _log(c, solution_name, input_id, result, proc_time, commit_hash, push):
 
 
 def _get_changes(c):
-    tags = io.StringIO()
-    base_commit = const.EVALED_GIT_TAG
-    with redirect_stdout(tags):
-        c.run("git tag")
+    tags = filter(
+        lambda s: s.startswith(const.EVALED_GIT_TAG),
+        _get_lines(c, "git tag"),
+    )
+    roots = _get_lines(c, "git rev-list --max-parents=0 HEAD")
+    base_commits = [*tags, *roots]
+    return [
+        *reduce(
+            set.intersection, map(partial(_get_diff_dirs, c), base_commits)
+        )
+    ]
 
-    if base_commit not in tags.getvalue():
-        comm_zero = io.StringIO()
-        with redirect_stdout(comm_zero):
-            c.run("git rev-list --max-parents=0 HEAD")
-        base_commit = comm_zero.getvalue().strip().split("\n")[0]
 
+def _get_lines(c, comm):
     f = io.StringIO()
     with redirect_stdout(f):
-        c.run(f"git diff {base_commit}..HEAD --name-only")
+        c.run(comm)
+    return f.getvalue().strip().split("\n")
 
+
+def _get_diff_dirs(c, base_commit):
     changes = set()
-    for poss_ch in f.getvalue().strip().split("\n"):
-        if poss_ch.startswith("."):
+    for poss_ch in _get_lines(c, f"git diff {base_commit}..HEAD --name-only"):
+        if (
+            poss_ch.startswith(".")
+            or poss_ch.startswith("__")
+            or (not poss_ch)
+        ):
             continue
         poss_dir = Path(poss_ch).parts[0]
         if Path(poss_dir).is_dir and Path(poss_dir).exists():
             changes.add(poss_dir)
-    return [*changes]
+    return changes
 
 
-def _retag(c):
-    c.run(f"git tag -f {const.EVALED_GIT_TAG}")
-
-    # tag all of the differently and only eval the ones that diff from all tags
+def _retag(c, push):
+    tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
+    c.run(f"git tag {tag_name}")
+    if push:
+        c.run(f"git push origin {tag_name}")
