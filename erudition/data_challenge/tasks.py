@@ -76,6 +76,8 @@ def get_test_pack(c):
 
 @task
 def retag(c):
+    if not _get_changes(c):
+        return
     tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
     c.run(f"git tag {tag_name}")
     c.run(f"git push origin {tag_name}")
