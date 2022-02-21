@@ -5,7 +5,7 @@ from datetime import datetime
 from distutils.dir_util import copy_tree
 from functools import partial, reduce
 from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory
 from uuid import uuid4
 from zipfile import ZipFile
 
@@ -27,7 +27,8 @@ class PackRepo:
     def __init__(self, pack_id) -> None:
 
         pack_loader = get_obj(const.PACK_FUNCTION)
-        self.tmpfile = NamedTemporaryFile()
+        self.tmpfile = Path(TemporaryDirectory().name) / "temp_file"
+        self.tmpfile.parent.mkdir(exist_ok=True, parents=True)
         pack_loader(pack_id, self.tmpfile.name)
 
     def dump_data(self, dirname):
