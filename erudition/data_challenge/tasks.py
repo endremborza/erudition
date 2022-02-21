@@ -81,9 +81,10 @@ def retag(c):
     tag_name = f"{const.EVALED_GIT_TAG}-{uuid4().hex}"
     c.run(f"git tag {tag_name}")
     c.run(f"git push origin {tag_name}")
+    c.run("git config --local pull.rebase true")
+    c.run("git pull")
     dump_readme()
     git_commit(c, "README.md", "update readme")
-    c.run("git config --local pull.rebase true")
     c.run("git pull; git push")
 
 
