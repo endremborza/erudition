@@ -27,9 +27,10 @@ class PackRepo:
     def __init__(self, pack_id) -> None:
 
         pack_loader = get_obj(const.PACK_FUNCTION)
-        self.tmpfile = Path(TemporaryDirectory().name) / "temp_file"
+        self.tmpdir = TemporaryDirectory()
+        self.tmpfile = Path(self.tmpdir.name) / "temp_file"
         self.tmpfile.parent.mkdir(exist_ok=True, parents=True)
-        pack_loader(pack_id, self.tmpfile.name)
+        pack_loader(pack_id, self.tmpfile.as_posix())
 
     def dump_data(self, dirname):
         self._dump(dirname, [const.INPUT_FILENAME, const.RESULTS_FILENAME])
@@ -41,7 +42,7 @@ class PackRepo:
         self._dump(dirname, only=const.RESULTS_FILENAME)
 
     def cleanup(self):
-        self.tmpfile.close()
+        self.tmpdir.cleanup()
 
     def _dump(self, dirname, exclude=(), only=None):
         with ZipFile(self.tmpfile.name) as zip_path:
