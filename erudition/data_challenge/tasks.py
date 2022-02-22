@@ -45,7 +45,7 @@ class PackRepo:
         self.tmpdir.cleanup()
 
     def _dump(self, dirname, exclude=(), only=None):
-        with ZipFile(self.tmpfile.name) as zip_path:
+        with ZipFile(self.tmpfile) as zip_path:
             for cfp in zip_path.filelist:
                 _name = cfp.filename
                 if (_name in exclude) or (only and (_name != only)):
@@ -192,11 +192,7 @@ def _get_lines(c, comm):
 def _get_diff_dirs(c, base_commit):
     changes = set()
     for poss_ch in _get_lines(c, f"git diff {base_commit}..HEAD --name-only"):
-        if (
-            poss_ch.startswith(".")
-            or poss_ch.startswith("__")
-            or (not poss_ch)
-        ):
+        if poss_ch.startswith(".") or poss_ch.startswith("__") or (not poss_ch):
             continue
         poss_dir = Path(poss_ch).parts[0]
         if Path(poss_dir).is_dir() and Path(poss_dir).exists():
