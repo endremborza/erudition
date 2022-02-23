@@ -1,1 +1,4 @@
+v0.0.8
+------
+
 - robust pull and no commit indiv run
