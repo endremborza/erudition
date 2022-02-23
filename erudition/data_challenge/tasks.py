@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory
 from uuid import uuid4
 from zipfile import ZipFile
 
-from invoke import task
+from invoke import UnexpectedExit, task
 from structlog import get_logger
 
 from ..util import git_commit
@@ -54,18 +54,20 @@ class PackRepo:
 @task
 def test_solution(c, name, input_id, fail=True):
     pack_repo = PackRepo(input_id)
-    _eval(c, name, pack_repo, input_id, fail, False)
+    _eval(c, name, pack_repo, input_id, fail, False, False)
     pack_repo.cleanup()
 
 
 @task
-def test_modified_solutions(c, input_id, fail=False, push_logs=True):
+def test_modified_solutions(
+    c, input_id, fail=False, commit_logs=True, push_logs=True
+):
     changed_solutions = _get_changes(c)
     if not changed_solutions:
         return
     pack_repo = PackRepo(input_id)
     for solution in changed_solutions:
-        _eval(c, solution, pack_repo, input_id, fail, push_logs)
+        _eval(c, solution, pack_repo, input_id, fail, commit_logs, push_logs)
     pack_repo.cleanup()
 
 
@@ -88,7 +90,9 @@ def retag(c):
     c.run("git pull; git push")
 
 
-def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
+def _eval(
+    c, solution_name, pack_repo: PackRepo, input_id, fail, commit_logs, push
+):
     logger.info(f"evaluating solution {solution_name} on input {input_id}")
     sdir = Path.cwd() / solution_name
     contid = "challenge_dcont_eu"
@@ -120,7 +124,16 @@ def _eval(c, solution_name, pack_repo: PackRepo, input_id, fail, push):
         tmpdir.cleanup()
         if fail:
             assert succ
-        _log(c, solution_name, input_id, succ, proc_time, _gethash(c), push)
+        log_dic = {
+            "name": solution_name,
+            "input_id": input_id,
+            "is_success": succ,
+            "duration": proc_time,
+            "commit": _gethash(c),
+            "at": datetime.now().isoformat(),
+        }
+
+        _log(c, log_dic, commit_logs, push)
 
 
 def _runcmd(c, containerid, comm):
@@ -146,25 +159,26 @@ def _gethash(c):
     return f.getvalue().strip()
 
 
-def _log(c, solution_name, input_id, result, proc_time, commit_hash, push):
-    logdic = {
-        "name": solution_name,
-        "input_id": input_id,
-        "is_success": result,
-        "duration": proc_time,
-        "commit": commit_hash,
-        "at": datetime.now().isoformat(),
-    }
+def _log(c, logdic, commit, push):
     logstr = json.dumps(logdic)
     logger.info("DONE", **logdic)
     lpath = Path(const.LOG_DIR)
     lpath.mkdir(exist_ok=True)
     log_id = uuid4().hex
     (lpath / f"{log_id}.json").write_text(logstr)
-    git_commit(c, const.LOG_DIR, f"add logs {log_id[:8]}")
-    if push:
-        c.run("git config --local pull.rebase true")
-        c.run("git pull; git push")
+    if commit:
+        git_commit(c, const.LOG_DIR, f"add logs {log_id[:8]}")
+    else:
+        return
+    if not push:
+        return
+    c.run("git config --local pull.rebase true")
+    for _ in range(6):
+        try:
+            c.run("git pull; git push")
+            break
+        except UnexpectedExit:
+            pass
 
 
 def _get_changes(c):
