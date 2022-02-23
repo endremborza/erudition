@@ -3,3 +3,4 @@ invoke
 pyyaml
 structlog
 pandas
+tabulate
