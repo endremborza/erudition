@@ -28,8 +28,7 @@ def dump_readme():
                             for i in range(gdf.shape[0])
                         ]
                     )
-                )[["v", "commit"]]
-                .reset_index()
+                )[["v", "commit", "name"]]
             )
         )
         .groupby(["v", "name", "input_id"])
