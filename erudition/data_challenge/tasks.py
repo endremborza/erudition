@@ -115,7 +115,7 @@ def _eval(
             dirname,
             json.loads((Path(dirname) / const.RESULTS_FILENAME).read_text()),
         )
-        _run("rm -rf /work/*")
+        _run("rm -rfv /work/ || echo done")
     except Exception as e:
         logger.exception(e)
         proc_time = float("inf")
