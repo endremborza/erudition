@@ -1,1 +1,4 @@
+v0.0.12
+------
+
 - nuclear deletion option
