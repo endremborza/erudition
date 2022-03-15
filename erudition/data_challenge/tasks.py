@@ -5,7 +5,7 @@ from datetime import datetime
 from distutils.dir_util import copy_tree
 from functools import partial, reduce
 from pathlib import Path
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory
 from uuid import uuid4
 from zipfile import ZipFile
 
@@ -27,8 +27,10 @@ class PackRepo:
     def __init__(self, pack_id) -> None:
 
         pack_loader = get_obj(const.PACK_FUNCTION)
-        self.tmpfile = NamedTemporaryFile()
-        pack_loader(pack_id, self.tmpfile.name)
+        self.tmpdir = TemporaryDirectory()
+        self.tmpfile = Path(self.tmpdir.name) / "temp_file"
+        self.tmpfile.parent.mkdir(exist_ok=True, parents=True)
+        pack_loader(pack_id, self.tmpfile.as_posix())
 
     def dump_data(self, dirname):
         self._dump(dirname, [const.INPUT_FILENAME, const.RESULTS_FILENAME])
@@ -40,10 +42,10 @@ class PackRepo:
         self._dump(dirname, only=const.RESULTS_FILENAME)
 
     def cleanup(self):
-        self.tmpfile.close()
+        self.tmpdir.cleanup()
 
     def _dump(self, dirname, exclude=(), only=None):
-        with ZipFile(self.tmpfile.name) as zip_path:
+        with ZipFile(self.tmpfile) as zip_path:
             for cfp in zip_path.filelist:
                 _name = cfp.filename
                 if (_name in exclude) or (only and (_name != only)):
@@ -205,11 +207,7 @@ def _get_lines(c, comm):
 def _get_diff_dirs(c, base_commit):
     changes = set()
     for poss_ch in _get_lines(c, f"git diff {base_commit}..HEAD --name-only"):
-        if (
-            poss_ch.startswith(".")
-            or poss_ch.startswith("__")
-            or (not poss_ch)
-        ):
+        if poss_ch.startswith(".") or poss_ch.startswith("__") or (not poss_ch):
             continue
         poss_dir = Path(poss_ch).parts[0]
         if Path(poss_dir).is_dir() and Path(poss_dir).exists():
